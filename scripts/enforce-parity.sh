@@ -23,10 +23,17 @@ source <(sed 's/^/export /' "$LOCK")
 [[ -n "${system_name:-}" ]] || { echo "FATAL: system_name not defined"; exit 1; }
 
 ### REGION PARITY (provider-scoped)
-allowed_regions=$(yq ".providers.${backend}.regions[]" "$POLICY" 2>/dev/null || true)
+allowed_regions=$(yq -r ".providers.${backend}.regions[]" "$POLICY" 2>/dev/null || true)
 
 [[ -n "$allowed_regions" ]] || {
   echo "FATAL: no regions defined for provider '$backend' in policy"
+  exit 1
+}
+
+echo "$allowed_regions" | grep -qx "$region" || {
+  echo "FATAL: region '$region' not allowed for provider '$backend'"
+  echo "Allowed:"
+  echo "$allowed_regions" | sed 's/^/  - /'
   exit 1
 }
 
