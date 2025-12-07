@@ -21,3 +21,10 @@ regions:
   - us-ashburn-1
   proxmox:
   - pve
+
+providers:
+  local:
+    regions:
+    - local
+    naming:
+      pattern: "^[a-z0-9-]+$"
