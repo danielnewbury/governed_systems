@@ -46,7 +46,8 @@ echo "$allowed_regions" | grep -qx "$region" || {
 
 
 ### NAMING PARITY (provider-scoped)
-pattern=$(yq ".providers.${backend}.naming.pattern" "$POLICY")
+pattern=$(yq -r ".providers.${backend}.naming.pattern" "$POLICY")
+
 
 [[ -n "$pattern" ]] || {
   echo "FATAL: no naming pattern defined for provider '$backend'"
