@@ -52,3 +52,25 @@ This system enforces the following invariants:
 │   ├── enforce-parity.sh
 │   └── setup-gpg-identity.sh
 └── README.md
+
+
+Here’s a tight, accurate description you can use verbatim. It explains *what the system is* without marketing fluff and without underselling the discipline you’ve built.
+
+---
+
+This repository implements a governed Terraform bootstrap system designed to establish a secure, auditable control plane for infrastructure management.
+
+The system wraps Terraform with strict governance controls that enforce explicit intent, policy compliance, and non-repudiation before any infrastructure can be planned or applied. It is intentionally opinionated and fail-closed: if any requirement is unmet, execution halts immediately.
+
+At its core, the bootstrap process requires an explicitly selected backend, verified against a cryptographic hash to prevent configuration drift or substitution. Backend selection is recorded in a lock file that captures metadata such as provider, region, and system identity. This lock file must be signed with a trusted GPG key, ensuring all foundational infrastructure changes are traceable to a verified human actor.
+
+Provider parity is enforced through a centralized policy that governs allowed regions, naming conventions, and required metadata across all supported providers. No provider may bypass global rules. This guarantees consistent behavior, predictable environments, and prevents silent divergence between cloud, on-prem, or local execution contexts.
+
+The system requires execution from a tagged release, ensuring deterministic rebuilds and preventing uncontrolled drift introduced by unreviewed code changes. Runtime artifacts, including backend locks and signatures, are intentionally excluded from version control to preserve intent integrity while keeping history auditable.
+
+Execution is interactive by design. Operators must acknowledge warnings, confirm destructive actions, and explicitly authorize applies using multi-step confirmations. Safe defaults are prioritized, with plan-only execution as the standard path.
+
+This system is not a replacement for Terraform, CI/CD pipelines, or configuration management. It is a control-plane guardrail designed to be run from a trusted administrative workstation to establish or re-establish foundational infrastructure under clear governance.
+
+Its purpose is to make infrastructure decisions explicit, attributable, reviewable, and repeatable—by construction, not convention.
+
