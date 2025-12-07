@@ -66,6 +66,12 @@ echo
 echo "Validating backend requirements..."
 "$ROOT/scripts/validate-backend.sh" || fatal "Environment validation failed"
 
+### STEP 3.5 — Provider parity enforcement
+echo
+echo "Enforcing provider parity (region + naming)..."
+"$ROOT/scripts/enforce-parity.sh" || fatal "Provider parity enforcement failed"
+
+
 ### STEP 4 — Terraform init gate
 echo
 pause

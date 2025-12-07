@@ -9,25 +9,41 @@ TARGET="$ROOT/infra/bootstrap/backend.tf"
 
 mkdir -p "$ROOT/infra/bootstrap"
 
-[[ -f "$LOCK" ]] && { echo "FATAL: backend already locked"; exit 1; }
+fatal() {
+  echo "FATAL: $1"
+  exit 1
+}
 
-echo "Backend selection (TESTING ONLY)"
+[[ -f "$LOCK" ]] && fatal "backend already locked"
+
+echo "=================================================="
+echo " Backend selection (TESTING ONLY)"
+echo "=================================================="
 echo "Selected backend: LOCAL"
 echo "This backend is NOT suitable for production."
 echo
 
 read -rp "Type LOCAL to confirm: " CONFIRM
-[[ "$CONFIRM" == "LOCAL" ]] || { echo "Aborted"; exit 1; }
+[[ "$CONFIRM" == "LOCAL" ]] || fatal "aborted"
+
+echo
+read -rp "Enter region (e.g. local): " REGION
+[[ -z "$REGION" ]] && fatal "Region is required"
+
+read -rp "Enter system name (governed naming): " SYSTEM_NAME
+[[ -z "$SYSTEM_NAME" ]] && fatal "System name is required"
 
 SHA="$(sha256sum "$TEMPLATE" | awk '{print $1}')"
 DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
-cat > "$LOCK" <<EOF2
+cat > "$LOCK" <<EOF
 backend=local
 template=backend_templates/local.tf
 sha256=$SHA
 timestamp=$DATE
-EOF2
+region=$REGION
+system_name=$SYSTEM_NAME
+EOF
 
 cp "$TEMPLATE" "$TARGET"
 
@@ -35,4 +51,8 @@ echo
 echo "Signing backend intent..."
 gpg --armor --detach-sign "$LOCK"
 
+echo
 echo "Backend locked and signed."
+echo "  backend      : local"
+echo "  region       : $REGION"
+echo "  system_name  : $SYSTEM_NAME"
