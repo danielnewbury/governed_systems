@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+git describe --tags --exact-match >/dev/null 2>&1 \
+  || { echo "FATAL: bootstrap must run from a tagged release"; exit 1; }
+
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
