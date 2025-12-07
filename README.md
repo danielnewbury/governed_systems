@@ -53,9 +53,6 @@ This system enforces the following invariants:
 │   └── setup-gpg-identity.sh
 └── README.md
 
-
-Here’s a tight, accurate description you can use verbatim. It explains *what the system is* without marketing fluff and without underselling the discipline you’ve built.
-
 ---
 
 This repository implements a governed Terraform bootstrap system designed to establish a secure, auditable control plane for infrastructure management.
