@@ -22,8 +22,13 @@ source <(sed 's/^/export /' "$LOCK")
 [[ -n "${region:-}" ]] || { echo "FATAL: region not defined in backend lock"; exit 1; }
 [[ -n "${system_name:-}" ]] || { echo "FATAL: system_name not defined"; exit 1; }
 
-### REGION PARITY
-allowed_regions=$(yq ".regions.${backend}[]" "$POLICY" 2>/dev/null || true)
+### REGION PARITY (provider-scoped)
+allowed_regions=$(yq ".providers.${backend}.regions[]" "$POLICY" 2>/dev/null || true)
+
+[[ -n "$allowed_regions" ]] || {
+  echo "FATAL: no regions defined for provider '$backend' in policy"
+  exit 1
+}
 
 echo "$allowed_regions" | grep -qx "$region" || {
   echo "FATAL: region '$region' not allowed for provider '$backend'"
@@ -32,8 +37,14 @@ echo "$allowed_regions" | grep -qx "$region" || {
   exit 1
 }
 
-### NAMING PARITY
-pattern=$(yq ".naming.pattern" "$POLICY")
+
+### NAMING PARITY (provider-scoped)
+pattern=$(yq ".providers.${backend}.naming.pattern" "$POLICY")
+
+[[ -n "$pattern" ]] || {
+  echo "FATAL: no naming pattern defined for provider '$backend'"
+  exit 1
+}
 
 if ! [[ "$system_name" =~ $pattern ]]; then
   echo "FATAL: system_name violates naming policy"
@@ -42,7 +53,3 @@ if ! [[ "$system_name" =~ $pattern ]]; then
   exit 1
 fi
 
-echo "Provider parity enforcement passed:"
-echo "  backend=$backend"
-echo "  region=$region"
-echo "  system_name=$system_name"
