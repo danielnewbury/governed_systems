@@ -45,14 +45,14 @@ echo "$allowed_regions" | grep -qx "$region" || {
 }
 
 
-### NAMING PARITY (provider-scoped)
-pattern=$(yq -r ".providers.${backend}.naming.pattern" "$POLICY")
+### NAMING PARITY (provider override → global fallback)
 
+pattern=$(yq -r ".providers.${backend}.naming.pattern // .global.naming.pattern" "$POLICY")
 
-[[ -n "$pattern" ]] || {
-  echo "FATAL: no naming pattern defined for provider '$backend'"
+if [[ -z "$pattern" || "$pattern" == "null" ]]; then
+  echo "FATAL: no naming pattern defined (provider or global)"
   exit 1
-}
+fi
 
 if ! [[ "$system_name" =~ $pattern ]]; then
   echo "FATAL: system_name violates naming policy"
