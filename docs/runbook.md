@@ -1,8 +1,6 @@
 
 ---
 
-# 2 — 350-word system description
-
 The Governed Infrastructure Bootstrap is a minimal, auditable control-plane foundation that treats infrastructure as governed product rather than ad-hoc IaC. Grounded in secure bootstrapping patterns, it enforces explicit backend selection, integrity (checksums + GPG signatures), signed human intent, and policy-driven parity (tags, naming, regions) before any Terraform state becomes mutable. The control plane is versioned and gate-kept: bootstrap runs only from signed repository tags, and a two-step confirmation (typed token + explicit APPLY) prevents accidental destructive actions.
 
 Operationally, the bootstrap creates remote state stores (S3/GCS/OCI Object Storage/Spaces/MinIO), KMS/Vault keys, and CI service identities (OIDC federation where available). It pushes responsibility for ongoing applies to CI runners using least privilege while preserving an emergency interactive path for certified admin machines. Every bootstrap action is recorded and signed; break-glass steps are rare, documented, and produce auditable artifacts (signed lock records, revocation artifacts, and `BREAK_GLASS_ACTIVE` entries).
@@ -11,9 +9,7 @@ Security controls include artifact signing, immutable backend locks, parity enfo
 
 ---
 
-# 3 — Is this production-ready?
-
-Short answer: **It’s a solid governed foundation but not "production-ready" out of the box.**
+**It’s a solid governed foundation but not "production-ready" out of the box.**
 
 Why:
 - You have the critical controls (signed intent, backend locking, parity enforcement). That’s excellent.
@@ -27,10 +23,6 @@ Why:
 
 ---
 
-# 4 — Break-glass doc (ISO Annex A mapping + SOC 2 comments)  
-Save as `docs/break_glass.md`. (I include ISO mappings and SOC 2 references inline as comments.)
-
-```markdown
 # Break-Glass Rebuild Procedure (Governed Control Plane)
 
 > Purpose: emergency rebuild of control plane when CI and standard management paths are unavailable.
