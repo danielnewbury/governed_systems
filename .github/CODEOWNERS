@@ -1,0 +1,18 @@
+# Global governance
+* @your-org/control-plane-admins
+
+# Provider policy
+/policy/ @your-org/security @your-org/platform
+
+# Bootstrap / control plane
+/bootstrap.sh @your-org/control-plane-admins
+/scripts/ @your-org/control-plane-admins
+
+# Terraform control plane
+/infra/bootstrap/ @your-org/platform
+
+# CI governance
+/.github/ @your-org/control-plane-admins
+
+# Break-glass artifacts
+/BREAK_GLASS_* @your-org/security
