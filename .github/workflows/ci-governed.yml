@@ -1,0 +1,160 @@
+name: Governed CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - "release/*"
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+env:
+  ROOT: ${{ github.workspace }}
+
+jobs:
+  preflight:
+    name: Preflight checks
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.ok.outputs.value }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure required files present
+        id: ok
+        run: |
+          set -euo pipefail
+          files=(VERSION policy/provider-parity.yaml scripts/enforce-parity.sh)
+          missing=()
+          for f in "${files[@]}"; do
+            [[ -f "$f" ]] || missing+=("$f")
+          done
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            echo "Missing required files: ${missing[*]}"
+            exit 2
+          fi
+          echo "value=true" >> "$GITHUB_OUTPUT"
+
+  signature-check:
+    name: Backend lock signature verification
+    needs: preflight
+    runs-on: ubuntu-latest
+    if: needs.preflight.outputs.ok == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GPG
+        run: sudo apt-get update && sudo apt-get install -y gnupg
+
+      - name: Import trusted public key
+        run: |
+          if [[ ! -f .keys/trusted.pub ]]; then
+            echo "Public key .keys/trusted.pub missing"
+            exit 2
+          fi
+          gpg --import .keys/trusted.pub
+
+      - name: Verify backend lock signature
+        run: |
+          [[ -f .backend.lock ]] || exit 2
+          [[ -f .backend.lock.asc ]] || exit 2
+          gpg --verify .backend.lock.asc .backend.lock
+
+  enforce-parity:
+    name: Provider parity & naming enforcement
+    needs: signature-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install yq
+
+      - name: Run provider parity script
+        run: |
+          chmod +x scripts/enforce-parity.sh
+          scripts/enforce-parity.sh
+
+  terraform-checks:
+    name: Terraform format / validate / plan (dry)
+    needs: enforce-parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform fmt (check)
+        run: |
+          cd infra/bootstrap || exit 0
+          terraform fmt -check -recursive
+
+      - name: Terraform init (backend disabled)
+        run: |
+          cd infra/bootstrap
+          terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: |
+          cd infra/bootstrap
+          terraform validate -json | tee validate.json
+
+      - name: Terraform plan (drift check)
+        run: |
+          cd infra/bootstrap
+          terraform plan -input=false -no-color
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra/bootstrap
+
+  policy-artifacts:
+    name: Policy & evidence packaging
+    needs: terraform-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create evidence bundle
+        run: |
+          mkdir -p evidence
+          cp -a \
+            .backend.lock \
+            .backend.lock.asc \
+            VERSION \
+            policy \
+            scripts \
+            evidence/ || true
+          tar czf evidence-${{ github.run_id }}.tgz evidence
+
+      - name: Upload evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence
+          path: evidence-${{ github.run_id }}.tgz
