@@ -1,23 +1,12 @@
-### Test Workflow ####
-######################
-name: Test Workflow
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   deploy-dev:
     name: Deploy to Dev
-    runs-on: ubuntu-latest
 
     environment:
       name: dev
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    runs-on: ubuntu-latest
 
-      - name: Deploy
-        run: echo "Deploying to DEV"
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploying to DEV"
